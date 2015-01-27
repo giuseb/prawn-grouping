@@ -58,6 +58,7 @@ describe "Prawn::Grouping" do
         pdf.text "Hello"
         pdf.text "World"
       end
+      pdf.render_file 'spec/output/hello_world.pdf'
 
       # group should return a false value since a new page was started
       expect(!!val).to eq(false)
@@ -67,8 +68,6 @@ describe "Prawn::Grouping" do
     expect(pages[0][:strings]).to eq([])
     expect(pages[1][:strings]).to eq(["Hello", "World"])
   end
-
-  
 
   it "should group within individual column boxes" do
     pdf = Prawn::Document.new do
@@ -81,6 +80,7 @@ describe "Prawn::Grouping" do
         end
       end
     end
+    pdf.render_file 'spec/output/column_boxes.pdf'
 
     # Second page should start with a 0 because it's a new group.
     pages = PDF::Inspector::Page.analyze(pdf.render).pages
@@ -105,7 +105,41 @@ describe "Prawn::Grouping" do
       expect(pages.size).to eq(1)
       expect(pages[0][:strings].first).to eq('0')
 
-      pdf.render_file 'test.pdf'
+      pdf.render_file 'spec/output/test.pdf'
     end
+  end
+  
+  it 'should push question #4 to the second column and #7 to page 2' do
+    pdf = Prawn::Document.new do
+      font_size 10
+      column_box [0, cursor], columns: 2, width: bounds.width do
+        7.times do |i|
+          group do
+            move_down 7
+            cy = y
+            text "#{i+1}."
+            move_up cy-y
+            indent 20 do
+              text "<b>This is question ##{i+1}</b>", inline_format: true
+              move_down 10
+              5.times do |j|
+                cy = y
+                text "#{j+1}."
+                move_up cy-y
+                indent 15 do
+                  text "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore"
+                  move_down 8
+                end
+              end
+              move_down 10
+            end
+          end
+        end
+      end
+    end
+    pages = PDF::Inspector::Page.analyze(pdf.render).pages
+    expect(pages.size).to eq(2)
+    expect(pages[1][:strings].first).to eq('7.')
+    pdf.render_file 'spec/output/question7.pdf'
   end
 end
